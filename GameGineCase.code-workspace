@@ -1,0 +1,883 @@
+{
+	"folders": [
+		{
+			"name": "GameGineCase",
+			"path": "."
+		},
+		{
+			"name": "UE5",
+			"path": "/home/canberk/UnrealEngine5.5"
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"npm.autoDetect": "off",
+		"terminal.integrated.env.linux": {
+			"PATH": "/home/canberk/UnrealEngine5.5/Engine/Binaries/ThirdParty/DotNet/8.0.300/linux-x64:${env:PATH}",
+			"DOTNET_ROOT": "/home/canberk/UnrealEngine5.5/Engine/Binaries/ThirdParty/DotNet/8.0.300/linux-x64",
+			"DOTNET_HOST_PATH": "/home/canberk/UnrealEngine5.5/Engine/Binaries/ThirdParty/DotNet/8.0.300/linux-x64/dotnet",
+			"DOTNET_MULTILEVEL_LOOKUP": "0",
+			"DOTNET_ROLL_FORWARD": "LatestMajor"
+		},
+		"files.associations": {
+			"system_error": "cpp",
+			"random": "cpp"
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-dotnettools.csharp"
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "GameGineCase Linux Debug Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Debug Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase Linux Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Debug Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux DebugGame Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase Linux DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux DebugGame Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Development Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Development Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase Linux Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Development Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Test Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Test",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Test Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Test",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase Linux Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Test Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Test",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Shipping Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Shipping",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Shipping Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Shipping",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase Linux Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase Linux Shipping Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"Linux",
+					"Shipping",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Debug Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Debug Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase LinuxArm64 Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Debug Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 DebugGame Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase LinuxArm64 DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 DebugGame Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Development Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Development Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase LinuxArm64 Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Development Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Test Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Test",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Test Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Test",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase LinuxArm64 Test Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Test Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Test",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Shipping Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Shipping",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Shipping Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Shipping",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCase LinuxArm64 Shipping Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCase LinuxArm64 Shipping Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCase",
+					"LinuxArm64",
+					"Shipping",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux Debug Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux Debug Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCaseEditor Linux Debug Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux Debug Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"Debug",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux DebugGame Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux DebugGame Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCaseEditor Linux DebugGame Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux DebugGame Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"DebugGame",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux Development Build",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux Development Rebuild",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex"
+				],
+				"problemMatcher": "$msCompile",
+				"dependsOn": [
+					"GameGineCaseEditor Linux Development Clean"
+				],
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			},
+			{
+				"label": "GameGineCaseEditor Linux Development Clean",
+				"group": "build",
+				"command": "Engine/Build/BatchFiles/Linux/Build.sh",
+				"args": [
+					"GameGineCaseEditor",
+					"Linux",
+					"Development",
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-waitmutex",
+					"-clean"
+				],
+				"problemMatcher": "$msCompile",
+				"type": "shell",
+				"options": {
+					"cwd": "/home/canberk/UnrealEngine5.5"
+				}
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch GameGineCase (Debug)",
+				"request": "launch",
+				"program": "/home/canberk/Desktop/Projects/StealthDemo/Binaries/Linux/UnrealGame-Linux-Debug",
+				"preLaunchTask": "GameGineCase Linux Debug Build",
+				"args": [
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCase (DebugGame)",
+				"request": "launch",
+				"program": "/home/canberk/Desktop/Projects/StealthDemo/Binaries/Linux/UnrealGame-Linux-DebugGame",
+				"preLaunchTask": "GameGineCase Linux DebugGame Build",
+				"args": [
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCase (Development)",
+				"request": "launch",
+				"program": "/home/canberk/Desktop/Projects/StealthDemo/Binaries/Linux/UnrealGame",
+				"preLaunchTask": "GameGineCase Linux Development Build",
+				"args": [
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCase (Test)",
+				"request": "launch",
+				"program": "/home/canberk/Desktop/Projects/StealthDemo/Binaries/Linux/UnrealGame-Linux-Test",
+				"preLaunchTask": "GameGineCase Linux Test Build",
+				"args": [
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCase (Shipping)",
+				"request": "launch",
+				"program": "/home/canberk/Desktop/Projects/StealthDemo/Binaries/Linux/UnrealGame-Linux-Shipping",
+				"preLaunchTask": "GameGineCase Linux Shipping Build",
+				"args": [
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCaseEditor (Debug)",
+				"request": "launch",
+				"program": "/home/canberk/UnrealEngine5.5/Engine/Binaries/Linux/UnrealEditor-Linux-Debug",
+				"preLaunchTask": "GameGineCaseEditor Linux Debug Build",
+				"args": [
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject"
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCaseEditor (DebugGame)",
+				"request": "launch",
+				"program": "/home/canberk/UnrealEngine5.5/Engine/Binaries/Linux/UnrealEditor-Linux-DebugGame",
+				"preLaunchTask": "GameGineCaseEditor Linux DebugGame Build",
+				"args": [
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject"
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Launch GameGineCaseEditor (Development)",
+				"request": "launch",
+				"program": "/home/canberk/UnrealEngine5.5/Engine/Binaries/Linux/UnrealEditor",
+				"preLaunchTask": "GameGineCaseEditor Linux Development Build",
+				"args": [
+					"/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject"
+				],
+				"cwd": "/home/canberk/UnrealEngine5.5",
+				"type": "cppdbg",
+				"visualizerFile": "/home/canberk/UnrealEngine5.5/Engine/Extras/VisualStudioDebugging/Unreal.natvis",
+				"showDisplayString": true
+			},
+			{
+				"name": "Generate Project Files",
+				"type": "coreclr",
+				"request": "launch",
+				"preLaunchTask": "UnrealBuildTool Linux Development Build",
+				"program": "/home/canberk/UnrealEngine5.5/Engine/Build/BatchFiles/RunUBT.bat",
+				"args": [
+					"-projectfiles",
+					"-vscode",
+					"-project=/home/canberk/Desktop/Projects/StealthDemo/GameGineCase.uproject",
+					"-game",
+					"-engine",
+					"-dotnet"
+				],
+				"env": {
+					"PATH": "/home/canberk/UnrealEngine5.5/Engine/Binaries/ThirdParty/DotNet/8.0.300/linux-x64:${env:PATH}",
+					"DOTNET_ROOT": "/home/canberk/UnrealEngine5.5/Engine/Binaries/ThirdParty/DotNet/8.0.300/linux-x64",
+					"DOTNET_HOST_PATH": "/home/canberk/UnrealEngine5.5/Engine/Binaries/ThirdParty/DotNet/8.0.300/linux-x64/dotnet",
+					"DOTNET_MULTILEVEL_LOOKUP": "0",
+					"DOTNET_ROLL_FORWARD": "LatestMajor"
+				},
+				"console": "internalConsole",
+				"internalConsoleOptions": "openOnSessionStart",
+				"stopAtEntry": false,
+				"cwd": "/home/canberk/UnrealEngine5.5"
+			}
+		]
+	}
+}
