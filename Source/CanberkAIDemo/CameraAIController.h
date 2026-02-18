@@ -19,7 +19,7 @@ public:
     void OnDetectPlayer() override;
     void OnHeardPlayer(FVector Location) override;
 
-    /** Trigger alert state — red light, then restart mission after delay */
+    /** Trigger alert state - red light, then restart mission after delay */
     void TriggerAlert();
 
     /** Get the accumulated sight time (for progress bar in BT tasks) */
@@ -44,6 +44,17 @@ private:
     /** Decay rate when player is not visible (per second) */
     UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
     float SightDecayRate = 1.5f;
+
+    /** Grace period before sight starts accumulating */
+    UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
+    float SightGracePeriod = 0.5f;
+
+    /** Current continuous sight time (for grace period tracking) */
+    float ContinuousSightTime = 0.f;
+
+    /** Acceleration multiplier after 60% progress */
+    UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
+    float SightAccelerationRate = 1.8f;
 
     /** Timer for the delay between alert and level restart */
     FTimerHandle AlertRestartTimerHandle;

@@ -35,7 +35,14 @@ ACameraPawn::ACameraPawn()
     NotifyWidget->SetDrawSize(FVector2D(100.f, 50.f));
     NotifyWidget->SetVisibility(false);
 
-    ChangeLightColor(FColor(10, 150, 0, 255));
+    ServoAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("ServoAudio"));
+    ServoAudioComponent->SetupAttachment(mesh, FName("CameraJoint"));
+    ServoAudioComponent->bAutoActivate = false;
+
+    FLinearColor InitialColor = FColor(10, 150, 0, 255);
+    CurrentLightColor = InitialColor;
+    TargetLightColor = InitialColor;
+    ScannerLight->SetLightColor(InitialColor);
 }
 
 void ACameraPawn::BeginPlay()
@@ -65,6 +72,13 @@ void ACameraPawn::BeginPlay()
             );
         }
     }
+
+    // Start servo loop sound if assigned
+    if (ServoLoopCue && ServoAudioComponent)
+    {
+        ServoAudioComponent->SetSound(ServoLoopCue);
+        ServoAudioComponent->Play();
+    }
 }
 
 void ACameraPawn::Tick(float DeltaTime)
@@ -84,6 +98,8 @@ void ACameraPawn::Tick(float DeltaTime)
     // Priority 3: DesiredLookTarget was set externally (by BT task via SetLookTarget)
 
     UpdateBoneRotation(DeltaTime);
+    UpdateLightColor(DeltaTime);
+    UpdateLightIntensity(DeltaTime);
 }
 
 void ACameraPawn::UpdateBoneRotation(float DeltaTime)
@@ -91,8 +107,27 @@ void ACameraPawn::UpdateBoneRotation(float DeltaTime)
     FVector CameraLocation = mesh->GetComponentLocation();
     FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(CameraLocation, DesiredLookTarget) + CameraLookOffset;
 
-    CurrentBoneRotation = FMath::RInterpTo(CurrentBoneRotation, TargetRot, DeltaTime, RotateSpeed);
+    // Servo settling: slow down in final 5 degrees for realistic deceleration
+    float AngleDiff = FMath::Abs(FRotator::NormalizeAxis(CurrentBoneRotation.Yaw - TargetRot.Yaw));
+    const float SettleThreshold = 5.0f;
+    const float MinSpeedFraction = 0.3f;
+    float EffectiveSpeed = RotateSpeed;
+    if (AngleDiff < SettleThreshold)
+    {
+        float T = AngleDiff / SettleThreshold;
+        EffectiveSpeed = RotateSpeed * FMath::Lerp(MinSpeedFraction, 1.0f, T);
+    }
+
+    CurrentBoneRotation = FMath::RInterpTo(CurrentBoneRotation, TargetRot, DeltaTime, EffectiveSpeed);
     mesh->SetBoneRotationByName("CameraJoint", CurrentBoneRotation, EBoneSpaces::WorldSpace);
+
+    // Modulate servo pitch based on rotation speed
+    if (ServoAudioComponent && ServoAudioComponent->IsPlaying())
+    {
+        float NormalizedSpeed = FMath::Clamp(AngleDiff / 30.0f, 0.0f, 1.0f);
+        ServoAudioComponent->SetPitchMultiplier(FMath::Lerp(0.6f, 1.2f, NormalizedSpeed));
+        ServoAudioComponent->SetVolumeMultiplier(FMath::Lerp(0.3f, 1.0f, NormalizedSpeed));
+    }
 }
 
 void ACameraPawn::UpdatePatrol(float DeltaTime)
@@ -148,7 +183,46 @@ FRotator ACameraPawn::GetHeadRotation()
 
 void ACameraPawn::ChangeLightColor(FColor color)
 {
-    ScannerLight->SetLightColor(color);
+    TargetLightColor = FLinearColor(color);
+}
+
+void ACameraPawn::UpdateLightColor(float DeltaTime)
+{
+    if (!CurrentLightColor.Equals(TargetLightColor, 0.001f))
+    {
+        CurrentLightColor = FLinearColor::LerpUsingHSV(CurrentLightColor, TargetLightColor, FMath::Clamp(DeltaTime * LightColorInterpSpeed, 0.f, 1.f));
+        ScannerLight->SetLightColor(CurrentLightColor);
+    }
+}
+
+void ACameraPawn::UpdateLightIntensity(float DeltaTime)
+{
+    PulseTimer += DeltaTime;
+    float Pulse = BaseLightIntensity + PulseAmplitude * FMath::Sin(PulseTimer * PulseFrequency * 2.0f * PI);
+    ScannerLight->SetIntensity(Pulse);
+}
+
+void ACameraPawn::SetLightIntensityMode(float InBaseIntensity, float InPulseAmplitude, float InPulseFrequency)
+{
+    BaseLightIntensity = InBaseIntensity;
+    PulseAmplitude = InPulseAmplitude;
+    PulseFrequency = InPulseFrequency;
+}
+
+void ACameraPawn::PlayNoticeSound()
+{
+    if (NoticeSoundCue)
+    {
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), NoticeSoundCue, GetActorLocation());
+    }
+}
+
+void ACameraPawn::PlayAlertSound()
+{
+    if (AlertSoundCue)
+    {
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), AlertSoundCue, GetActorLocation());
+    }
 }
 
 #pragma region Smooth Movement API

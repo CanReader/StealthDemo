@@ -4,6 +4,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "CameraPawn.h"
+#include "CameraAIController.h"
 
 UBTTask_CameraInvestigateLoop::UBTTask_CameraInvestigateLoop()
 {
@@ -56,6 +57,18 @@ void UBTTask_CameraInvestigateLoop::TickTask(UBehaviorTreeComponent& OwnerComp, 
 		return;
 	}
 
+	// If player is seen during hearing investigation → immediate alert
+	bool bCanSee = BB->GetValueAsBool(FName("bDidSee"));
+	if (bCanSee)
+	{
+		if (ACameraAIController* CamAI = Cast<ACameraAIController>(AIController))
+		{
+			CamAI->TriggerAlert();
+		}
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
 	// Check if we've completed all investigation points
 	if (CurrentPointIndex >= InvestigatePointCount)
 	{
@@ -96,12 +109,13 @@ void UBTTask_CameraInvestigateLoop::TickTask(UBehaviorTreeComponent& OwnerComp, 
 		Camera->SetLookTarget(LookPoint);
 		bLookTargetSet = true;
 		CurrentLookTimer = 0.f;
+		CurrentPointDuration = LookDuration + FMath::FRandRange(-LookDurationVariance, LookDurationVariance);
 	}
 
 	// Count time looking at this point
 	CurrentLookTimer += DeltaSeconds;
 
-	if (CurrentLookTimer >= LookDuration)
+	if (CurrentLookTimer >= CurrentPointDuration)
 	{
 		CurrentPointIndex++;
 		bLookTargetSet = false;

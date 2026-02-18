@@ -51,7 +51,11 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Camera AI")
 	int32 InvestigatePointCount = 3;
 
+	UPROPERTY(EditAnywhere, Category = "Camera AI")
+	float DurationVariance = 0.5f;
+
 	float PhaseTimer = 0.f;
+	float CurrentPhaseDuration = 0.f;
 	FVector LastSeenLocation;
 	TArray<FVector> InvestigatePoints;
 	int32 CurrentInvestigateIndex = 0;

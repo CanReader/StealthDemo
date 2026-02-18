@@ -8,6 +8,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Components/AudioComponent.h"
 #include "CameraPawn.generated.h"
 
 class ACameraAIController;
@@ -30,6 +31,9 @@ public:
 
 	void ChangeLightColor(FColor color);
 
+	/** Set intensity pulse parameters — called by AI controller on state change */
+	void SetLightIntensityMode(float InBaseIntensity, float InPulseAmplitude, float InPulseFrequency);
+
 #pragma region Smooth Movement API
 	/** Set a world-space point the camera should look at (used by BT tasks) */
 	void SetLookTarget(FVector InTarget);
@@ -44,6 +48,10 @@ public:
 
 	FORCEINLINE bool IsPatrolling() const { return bIsPatrolling; }
 #pragma endregion
+
+	/** Play one-shot sound cues (called by AI controller) */
+	void PlayNoticeSound();
+	void PlayAlertSound();
 
 	/** Get the alert widget for progress bar updates */
 	UAlertWidget* GetNotifyWidget() const;
@@ -64,6 +72,8 @@ private:
 	void CalculatePatrolPoints();
 	void UpdateBoneRotation(float DeltaTime);
 	void UpdatePatrol(float DeltaTime);
+	void UpdateLightColor(float DeltaTime);
+	void UpdateLightIntensity(float DeltaTime);
 
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -116,6 +126,33 @@ private:
 	int32 CurrentPatrolIndex = 0;
 	float PatrolWaitTimer = 0.f;
 	bool bWaitingAtPatrolPoint = false;
+#pragma endregion
+
+#pragma region Light Interpolation
+	FLinearColor CurrentLightColor;
+	FLinearColor TargetLightColor;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Light")
+	float LightColorInterpSpeed = 3.0f;
+
+	float BaseLightIntensity = 5000.f;
+	float PulseAmplitude = 500.f;
+	float PulseFrequency = 0.5f;
+	float PulseTimer = 0.f;
+#pragma endregion
+
+#pragma region Sound
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> ServoLoopCue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> NoticeSoundCue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> AlertSoundCue;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> ServoAudioComponent;
 #pragma endregion
 
 	/** The world-space point the camera is always smoothly interpolating toward */

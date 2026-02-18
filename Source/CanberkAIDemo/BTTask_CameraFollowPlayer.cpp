@@ -76,6 +76,7 @@ void UBTTask_CameraFollowPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 			LastSeenLocation = BB->GetValueAsVector(FName("LastSeenLocation"));
 			Camera->SetLookTarget(LastSeenLocation);
 			PhaseTimer = 0.f;
+			CurrentPhaseDuration = LookAtLastSeenDuration + FMath::FRandRange(-DurationVariance, DurationVariance);
 			CurrentPhase = ECameraFollowPhase::LookingAtLastSeen;
 
 			if (CamAI)
@@ -98,7 +99,7 @@ void UBTTask_CameraFollowPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		}
 
 		PhaseTimer += DeltaSeconds;
-		if (PhaseTimer >= LookAtLastSeenDuration)
+		if (PhaseTimer >= CurrentPhaseDuration)
 		{
 			EnterInvestigatePhase(OwnerComp);
 		}
@@ -117,7 +118,7 @@ void UBTTask_CameraFollowPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		}
 
 		PhaseTimer += DeltaSeconds;
-		if (PhaseTimer >= InvestigatePointDuration)
+		if (PhaseTimer >= CurrentPhaseDuration)
 		{
 			CurrentInvestigateIndex++;
 			if (CurrentInvestigateIndex >= InvestigatePoints.Num())
@@ -133,6 +134,7 @@ void UBTTask_CameraFollowPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 
 			Camera->SetLookTarget(InvestigatePoints[CurrentInvestigateIndex]);
 			PhaseTimer = 0.f;
+			CurrentPhaseDuration = InvestigatePointDuration + FMath::FRandRange(-DurationVariance, DurationVariance);
 		}
 		break;
 	}
@@ -143,6 +145,7 @@ void UBTTask_CameraFollowPlayer::EnterInvestigatePhase(UBehaviorTreeComponent& O
 {
 	CurrentPhase = ECameraFollowPhase::Investigating;
 	PhaseTimer = 0.f;
+	CurrentPhaseDuration = InvestigatePointDuration + FMath::FRandRange(-DurationVariance, DurationVariance);
 	CurrentInvestigateIndex = 0;
 	InvestigatePoints.Empty();
 

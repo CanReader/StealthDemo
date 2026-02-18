@@ -61,16 +61,20 @@ void ACameraAIController::SetAwarnessState(EPlayerAwarenessState state)
 		{
 		case EPlayerAwarenessState::Alerted:
 			camera->ChangeLightColor(FColor::FromHex("A70004FF")); // Red
+			camera->SetLightIntensityMode(6000.f, 2000.f, 3.0f); // Aggressive flash
 			break;
 		case EPlayerAwarenessState::Investigating:
 		case EPlayerAwarenessState::Suspicious:
 			camera->ChangeLightColor(FColor::FromHex("FFED29FF")); // Yellow
+			camera->SetLightIntensityMode(6000.f, 0.f, 0.f); // Steady bright
 			break;
 		case EPlayerAwarenessState::LostTarget:
 			camera->ChangeLightColor(FColor::FromHex("FFA500FF")); // Orange
+			camera->SetLightIntensityMode(6000.f, 0.f, 0.f); // Steady bright
 			break;
 		default:
 			camera->ChangeLightColor(FColor::FromHex("82E600FF")); // Green
+			camera->SetLightIntensityMode(5000.f, 500.f, 0.5f); // Gentle breathing
 			break;
 		}
 	}
@@ -95,6 +99,7 @@ void ACameraAIController::OnNoticedPlayer(APawn* Player)
 
 	if (camera)
 	{
+		camera->PlayNoticeSound();
 		camera->RotateSpeed = camera->ReactRotateSpeed;
 		camera->PausePatrol();
 		camera->SetFollowTarget(Player);
@@ -168,40 +173,56 @@ void ACameraAIController::UpdateSightEscalation(float DeltaTime)
 
 	if (bCanSeePlayer && CurrentState != EPlayerAwarenessState::Alerted)
 	{
-		SightAccumulatedTime += DeltaTime;
+		ContinuousSightTime += DeltaTime;
 
-		// Update progress bar on widget
-		if (camera)
+		// Grace period: first 0.5s of sight doesn't count
+		if (ContinuousSightTime > SightGracePeriod)
 		{
 			float Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
-			camera->SetNotifyWidgetVisible(true);
-			if (UAlertWidget* Widget = camera->GetNotifyWidget())
-			{
-				Widget->SetNoticeProgress(Progress);
-			}
-		}
 
-		// Check threshold
-		if (SightAccumulatedTime >= SightAlertThreshold)
-		{
-			TriggerAlert();
+			// Accelerate accumulation past 60%
+			float Rate = Progress > 0.6f ? SightAccelerationRate : 1.0f;
+			SightAccumulatedTime += DeltaTime * Rate;
+
+			// Update progress bar on widget
+			Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
+			if (camera)
+			{
+				camera->SetNotifyWidgetVisible(true);
+				if (UAlertWidget* Widget = camera->GetNotifyWidget())
+				{
+					Widget->SetNoticeProgress(Progress);
+				}
+			}
+
+			// Check threshold
+			if (SightAccumulatedTime >= SightAlertThreshold)
+			{
+				TriggerAlert();
+			}
 		}
 	}
-	else if (!bCanSeePlayer && SightAccumulatedTime > 0.f)
+	else if (!bCanSeePlayer)
 	{
-		// Decay the timer when not seeing the player
-		SightAccumulatedTime = FMath::Max(0.f, SightAccumulatedTime - SightDecayRate * DeltaTime);
+		// Reset grace period on sight loss
+		ContinuousSightTime = 0.f;
 
-		if (camera)
+		if (SightAccumulatedTime > 0.f)
 		{
-			float Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
-			if (Progress <= 0.f)
+			// Decay the timer when not seeing the player
+			SightAccumulatedTime = FMath::Max(0.f, SightAccumulatedTime - SightDecayRate * DeltaTime);
+
+			if (camera)
 			{
-				camera->SetNotifyWidgetVisible(false);
-			}
-			else if (UAlertWidget* Widget = camera->GetNotifyWidget())
-			{
-				Widget->SetNoticeProgress(Progress);
+				float Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
+				if (Progress <= 0.f)
+				{
+					camera->SetNotifyWidgetVisible(false);
+				}
+				else if (UAlertWidget* Widget = camera->GetNotifyWidget())
+				{
+					Widget->SetNoticeProgress(Progress);
+				}
 			}
 		}
 	}
@@ -216,9 +237,16 @@ void ACameraAIController::TriggerAlert()
 
 	if (camera)
 	{
-		camera->ClearFollowTarget();
+		camera->PlayAlertSound();
 		camera->PausePatrol();
 		camera->SetNotifyWidgetVisible(true);
+
+		// Lock onto the player during alert window
+		if (AActor* Player = Cast<AActor>(Blackboard->GetValueAsObject(FName("Character"))))
+		{
+			camera->SetFollowTarget(Player);
+			camera->RotateSpeed = camera->ReactRotateSpeed * 1.5f;
+		}
 
 		if (UAlertWidget* Widget = camera->GetNotifyWidget())
 		{

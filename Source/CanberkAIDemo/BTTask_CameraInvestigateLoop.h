@@ -43,11 +43,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	FBlackboardKeySelector InvestigateCountKey;
 
+	/** Random variance applied to look duration per point (seconds) */
+	UPROPERTY(EditAnywhere, Category = "Investigation")
+	float LookDurationVariance = 0.5f;
+
 	/** Current point index during investigation */
 	int32 CurrentPointIndex = 0;
 
 	/** Timer for current look duration */
 	float CurrentLookTimer = 0.f;
+
+	/** Actual duration for the current point (LookDuration +/- variance) */
+	float CurrentPointDuration = 0.f;
 
 	/** Whether we've set the look target for the current point */
 	bool bLookTargetSet = false;
