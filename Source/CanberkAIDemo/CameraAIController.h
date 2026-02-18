@@ -11,6 +11,7 @@ class CANBERKAIDEMO_API ACameraAIController : public ABaseAIController
 public:
     ACameraAIController();
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void Tick(float DeltaTime) override;
 
     void SetAwarnessState(EPlayerAwarenessState state) override;

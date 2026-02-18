@@ -1,6 +1,7 @@
 #include "CameraAIController.h"
 #include "CameraPawn.h"
 #include "AlertWidget.h"
+#include "CharacterHUD.h"
 #include "MissionGameMode.h"
 #include "Debugger.h"
 #include "Kismet/GameplayStatics.h"
@@ -41,6 +42,28 @@ void ACameraAIController::BeginPlay()
 	camera = GetPawn<ACameraPawn>();
 
 	SetAwarnessState(EPlayerAwarenessState::Unaware);
+
+	// Register with the player's HUD for screen-space indicators
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		if (ACharacterHUD* HUD = Cast<ACharacterHUD>(PC->GetHUD()))
+		{
+			HUD->RegisterCamera(this);
+		}
+	}
+}
+
+void ACameraAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		if (ACharacterHUD* HUD = Cast<ACharacterHUD>(PC->GetHUD()))
+		{
+			HUD->UnregisterCamera(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void ACameraAIController::Tick(float DeltaTime)
@@ -184,17 +207,6 @@ void ACameraAIController::UpdateSightEscalation(float DeltaTime)
 			float Rate = Progress > 0.6f ? SightAccelerationRate : 1.0f;
 			SightAccumulatedTime += DeltaTime * Rate;
 
-			// Update progress bar on widget
-			Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
-			if (camera)
-			{
-				camera->SetNotifyWidgetVisible(true);
-				if (UAlertWidget* Widget = camera->GetNotifyWidget())
-				{
-					Widget->SetNoticeProgress(Progress);
-				}
-			}
-
 			// Check threshold
 			if (SightAccumulatedTime >= SightAlertThreshold)
 			{
@@ -211,19 +223,6 @@ void ACameraAIController::UpdateSightEscalation(float DeltaTime)
 		{
 			// Decay the timer when not seeing the player
 			SightAccumulatedTime = FMath::Max(0.f, SightAccumulatedTime - SightDecayRate * DeltaTime);
-
-			if (camera)
-			{
-				float Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
-				if (Progress <= 0.f)
-				{
-					camera->SetNotifyWidgetVisible(false);
-				}
-				else if (UAlertWidget* Widget = camera->GetNotifyWidget())
-				{
-					Widget->SetNoticeProgress(Progress);
-				}
-			}
 		}
 	}
 }
@@ -239,18 +238,12 @@ void ACameraAIController::TriggerAlert()
 	{
 		camera->PlayAlertSound();
 		camera->PausePatrol();
-		camera->SetNotifyWidgetVisible(true);
 
 		// Lock onto the player during alert window
 		if (AActor* Player = Cast<AActor>(Blackboard->GetValueAsObject(FName("Character"))))
 		{
 			camera->SetFollowTarget(Player);
 			camera->RotateSpeed = camera->ReactRotateSpeed * 1.5f;
-		}
-
-		if (UAlertWidget* Widget = camera->GetNotifyWidget())
-		{
-			Widget->SetNoticeProgress(1.0f);
 		}
 	}
 
