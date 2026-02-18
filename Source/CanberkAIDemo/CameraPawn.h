@@ -54,6 +54,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Patrol, meta = (AllowPrivateAccess = "true"))
 	float RotateSpeed = 0.8f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Patrol, meta = (AllowPrivateAccess = "true"))
+	float PatrolRotateSpeed = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Patrol, meta = (AllowPrivateAccess = "true"))
+	float ReactRotateSpeed = 4.0f;
+
 private:
 	void CalculatePatrolPoints();
 	void UpdateBoneRotation(float DeltaTime);

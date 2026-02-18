@@ -21,8 +21,7 @@ EBTNodeResult::Type UBTTask_ResumePatrol::ExecuteTask(UBehaviorTreeComponent& Ow
 	// Restore normal rotation speed
 	if (ACameraAIController* CamAI = Cast<ACameraAIController>(AIController))
 	{
-		// Reset to default speed (the pawn's EditAnywhere default)
-		Camera->RotateSpeed = 0.8f;
+		Camera->RotateSpeed = Camera->PatrolRotateSpeed;
 	}
 
 	Camera->ResumePatrol();

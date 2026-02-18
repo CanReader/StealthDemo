@@ -40,11 +40,6 @@ void ACameraAIController::BeginPlay()
 
 	camera = GetPawn<ACameraPawn>();
 
-	if (camera)
-	{
-		NormalRotateSpeed = camera->RotateSpeed;
-	}
-
 	SetAwarnessState(EPlayerAwarenessState::Unaware);
 }
 
@@ -100,6 +95,7 @@ void ACameraAIController::OnNoticedPlayer(APawn* Player)
 
 	if (camera)
 	{
+		camera->RotateSpeed = camera->ReactRotateSpeed;
 		camera->PausePatrol();
 		camera->SetFollowTarget(Player);
 	}
@@ -118,17 +114,11 @@ void ACameraAIController::OnLostPlayer(bool bIsSightLost)
 			camera->ClearFollowTarget();
 		}
 
-		// If we were Suspicious (tracking player), switch to Investigating at the last seen location
 		if (CurrentState == EPlayerAwarenessState::Suspicious)
 		{
-			FVector LastSeen = Blackboard->GetValueAsVector(FName("LastSeenLocation"));
-			Blackboard->SetValueAsVector(FName("InvestigateOrigin"), LastSeen);
-			Blackboard->SetValueAsInt(FName("InvestigateCount"), 0);
-
-			// Use faster rotation speed for post-sight investigation
 			if (camera)
 			{
-				camera->RotateSpeed = InvestigateFasterSpeed;
+				camera->RotateSpeed = camera->ReactRotateSpeed;
 			}
 
 			SetAwarnessState(EPlayerAwarenessState::Investigating);
@@ -163,6 +153,7 @@ void ACameraAIController::OnHeardPlayer(FVector Location)
 
 	if (camera)
 	{
+		camera->RotateSpeed = camera->ReactRotateSpeed;
 		camera->PausePatrol();
 	}
 

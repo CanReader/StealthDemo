@@ -45,13 +45,6 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
     float SightDecayRate = 1.5f;
 
-    /** Faster rotation speed during post-sight investigation */
-    UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
-    float InvestigateFasterSpeed = 2.5f;
-
-    /** Normal patrol rotation speed (saved on BeginPlay) */
-    float NormalRotateSpeed = 0.8f;
-
     /** Timer for the delay between alert and level restart */
     FTimerHandle AlertRestartTimerHandle;
 
