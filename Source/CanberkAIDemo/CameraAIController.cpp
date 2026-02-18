@@ -181,6 +181,7 @@ void ACameraAIController::OnHeardPlayer(FVector Location)
 
 	if (camera)
 	{
+		camera->PlayHearingNoticeSound();
 		camera->RotateSpeed = camera->ReactRotateSpeed;
 		camera->PausePatrol();
 	}
@@ -203,9 +204,22 @@ void ACameraAIController::UpdateSightEscalation(float DeltaTime)
 		{
 			float Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
 
+			// Start escalation sound when detection begins accumulating
+			if (camera && SightAccumulatedTime < KINDA_SMALL_NUMBER)
+			{
+				camera->StartEscalationSound();
+			}
+
 			// Accelerate accumulation past 60%
 			float Rate = Progress > 0.6f ? SightAccelerationRate : 1.0f;
 			SightAccumulatedTime += DeltaTime * Rate;
+
+			// Update escalation pitch based on progress
+			Progress = FMath::Clamp(SightAccumulatedTime / SightAlertThreshold, 0.f, 1.f);
+			if (camera)
+			{
+				camera->UpdateEscalationPitch(Progress);
+			}
 
 			// Check threshold
 			if (SightAccumulatedTime >= SightAlertThreshold)
@@ -223,6 +237,11 @@ void ACameraAIController::UpdateSightEscalation(float DeltaTime)
 		{
 			// Decay the timer when not seeing the player
 			SightAccumulatedTime = FMath::Max(0.f, SightAccumulatedTime - SightDecayRate * DeltaTime);
+
+			if (SightAccumulatedTime <= 0.f && camera)
+			{
+				camera->StopEscalationSound();
+			}
 		}
 	}
 }

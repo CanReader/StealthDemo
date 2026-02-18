@@ -39,6 +39,10 @@ ACameraPawn::ACameraPawn()
     ServoAudioComponent->SetupAttachment(mesh, FName("CameraJoint"));
     ServoAudioComponent->bAutoActivate = false;
 
+    EscalationAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("EscalationAudio"));
+    EscalationAudioComponent->SetupAttachment(RootComponent);
+    EscalationAudioComponent->bAutoActivate = false;
+
     FLinearColor InitialColor = FColor(10, 150, 0, 255);
     CurrentLightColor = InitialColor;
     TargetLightColor = InitialColor;
@@ -223,6 +227,48 @@ void ACameraPawn::PlayAlertSound()
     {
         UGameplayStatics::PlaySoundAtLocation(GetWorld(), AlertSoundCue, GetActorLocation());
     }
+
+    // Stop escalation sound when alert fires
+    StopEscalationSound();
+}
+
+void ACameraPawn::PlayHearingNoticeSound()
+{
+    if (HearingNoticeSoundCue)
+    {
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), HearingNoticeSoundCue, GetActorLocation());
+    }
+}
+
+void ACameraPawn::StartEscalationSound()
+{
+    if (!EscalationSoundCue || !EscalationAudioComponent) return;
+    if (EscalationAudioComponent->IsPlaying()) return;
+
+    EscalationAudioComponent->SetSound(EscalationSoundCue);
+    EscalationAudioComponent->SetPitchMultiplier(EscalationMinPitch);
+    EscalationAudioComponent->SetVolumeMultiplier(0.5f);
+    EscalationAudioComponent->Play();
+}
+
+void ACameraPawn::StopEscalationSound()
+{
+    if (EscalationAudioComponent && EscalationAudioComponent->IsPlaying())
+    {
+        EscalationAudioComponent->FadeOut(0.3f, 0.f);
+    }
+}
+
+void ACameraPawn::UpdateEscalationPitch(float Progress)
+{
+    if (!EscalationAudioComponent || !EscalationAudioComponent->IsPlaying()) return;
+
+    float Pitch = FMath::Lerp(EscalationMinPitch, EscalationMaxPitch, Progress);
+    EscalationAudioComponent->SetPitchMultiplier(Pitch);
+
+    // Volume also increases with progress
+    float Volume = FMath::Lerp(0.5f, 1.0f, Progress);
+    EscalationAudioComponent->SetVolumeMultiplier(Volume);
 }
 
 #pragma region Smooth Movement API

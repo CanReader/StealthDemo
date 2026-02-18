@@ -52,6 +52,12 @@ public:
 	/** Play one-shot sound cues (called by AI controller) */
 	void PlayNoticeSound();
 	void PlayAlertSound();
+	void PlayHearingNoticeSound();
+
+	/** Escalation sound — rising pitch tone while detection meter fills */
+	void StartEscalationSound();
+	void StopEscalationSound();
+	void UpdateEscalationPitch(float Progress);
 
 	/** Get the alert widget for progress bar updates */
 	UAlertWidget* GetNotifyWidget() const;
@@ -151,8 +157,27 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USoundBase> AlertSoundCue;
 
+	/** Sound that plays when camera hears a noise */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> HearingNoticeSoundCue;
+
+	/** Looping tone that plays during sight escalation — pitch rises with progress */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> EscalationSoundCue;
+
+	/** Min pitch for escalation sound (at 0% progress) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	float EscalationMinPitch = 0.6f;
+
+	/** Max pitch for escalation sound (at 100% progress) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Sound", meta = (AllowPrivateAccess = "true"))
+	float EscalationMaxPitch = 2.0f;
+
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> ServoAudioComponent;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> EscalationAudioComponent;
 #pragma endregion
 
 	/** The world-space point the camera is always smoothly interpolating toward */
