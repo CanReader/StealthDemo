@@ -32,11 +32,11 @@ void ACharacterHUD::DrawHUD()
 
     GEngine->GameViewport->GetViewportSize(ViewportSize);
 
-    for (ACameraAIController* Cam : RegisteredCameras)
+    for (auto& Pair : CameraIndicators)
     {
-        if (Cam)
+        if (Pair.Key && Pair.Value.Opacity > 0.01f)
         {
-            DrawCameraIndicator(Cam);
+            DrawCameraIndicator(Pair.Key, Pair.Value);
         }
     }
 }
@@ -44,6 +44,8 @@ void ACharacterHUD::DrawHUD()
 void ACharacterHUD::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+
+    UpdateIndicatorStates(DeltaTime);
 
     if (Overlay)
     {
@@ -112,26 +114,47 @@ void ACharacterHUD::UpdateAmmo(int32 Current, int32 Carried)
 
 void ACharacterHUD::RegisterCamera(ACameraAIController* Camera)
 {
-    if (Camera)
+    if (Camera && !CameraIndicators.Contains(Camera))
     {
-        RegisteredCameras.AddUnique(Camera);
+        CameraIndicators.Add(Camera, FCameraIndicatorState());
     }
 }
 
 void ACharacterHUD::UnregisterCamera(ACameraAIController* Camera)
 {
-    RegisteredCameras.Remove(Camera);
+    CameraIndicators.Remove(Camera);
 }
 
-void ACharacterHUD::DrawCameraIndicator(ACameraAIController* CameraController)
+void ACharacterHUD::UpdateIndicatorStates(float DeltaTime)
+{
+    for (auto& Pair : CameraIndicators)
+    {
+        ACameraAIController* Cam = Pair.Key;
+        FCameraIndicatorState& State = Pair.Value;
+        if (!Cam) continue;
+
+        EPlayerAwarenessState Awareness = Cam->GetAwarnessState();
+        bool bActive = (Awareness != EPlayerAwarenessState::Unaware && Awareness != EPlayerAwarenessState::ReturningToPatrol);
+
+        float TargetOpacity = bActive ? 1.0f : 0.0f;
+        State.Opacity = FMath::FInterpTo(State.Opacity, TargetOpacity, DeltaTime, FadeSpeed);
+
+        if (Awareness == EPlayerAwarenessState::Alerted || Awareness == EPlayerAwarenessState::AlarmTriggered)
+        {
+            State.PulseTimer += DeltaTime;
+        }
+        else
+        {
+            State.PulseTimer = 0.f;
+        }
+    }
+}
+
+void ACharacterHUD::DrawCameraIndicator(ACameraAIController* CameraController, FCameraIndicatorState& IndicatorState)
 {
     if (!CameraController || !Canvas) return;
 
     EPlayerAwarenessState State = CameraController->GetAwarnessState();
-
-    // Skip if unaware or returning to patrol
-    if (State == EPlayerAwarenessState::Unaware || State == EPlayerAwarenessState::ReturningToPatrol)
-        return;
 
     // Get camera world position
     ACameraPawn* CamPawn = Cast<ACameraPawn>(CameraController->GetPawn());
@@ -141,8 +164,9 @@ void ACharacterHUD::DrawCameraIndicator(ACameraAIController* CameraController)
 
     // Project to screen
     FVector2D ScreenPos;
+    FVector CamLoc;
     bool bIsBehindCamera = false;
-    ProjectWorldToHUD(WorldPos, ScreenPos, bIsBehindCamera);
+    ProjectWorldToHUD(WorldPos, ScreenPos, bIsBehindCamera, CamLoc);
 
     FVector2D ScreenCenter(ViewportSize.X * 0.5f, ViewportSize.Y * 0.5f);
 
@@ -153,7 +177,6 @@ void ACharacterHUD::DrawCameraIndicator(ACameraAIController* CameraController)
 
     if (bIsBehindCamera)
     {
-        // Flip through center so indicator points toward the camera
         ScreenPos = ScreenCenter + (ScreenCenter - ScreenPos);
     }
 
@@ -162,63 +185,96 @@ void ACharacterHUD::DrawCameraIndicator(ACameraAIController* CameraController)
         ScreenPos = ClampToViewportEdge(ScreenCenter, ScreenPos, EdgeMargin);
     }
 
+    // Distance-based scaling (only when on-screen)
+    float DistanceScale = 1.0f;
+    if (!bOffScreen)
+    {
+        float Distance = FVector::Dist(CamLoc, WorldPos);
+        DistanceScale = FMath::Clamp(1500.f / Distance, 0.6f, 1.5f);
+    }
+
+    // Pulse scaling (alert only)
+    float PulseScale = 1.0f;
+    if (IndicatorState.PulseTimer > 0.f)
+    {
+        PulseScale = 1.0f + 0.15f * FMath::Sin(IndicatorState.PulseTimer * 8.0f);
+    }
+
+    float FinalSize = IndicatorSize * DistanceScale * PulseScale;
+    float Opacity = IndicatorState.Opacity;
+
     // Draw based on state
     float Progress = CameraController->GetSightProgress();
+
+    auto ApplyOpacity = [Opacity](const FLinearColor& Color) -> FLinearColor
+    {
+        return FLinearColor(Color.R, Color.G, Color.B, Color.A * Opacity);
+    };
 
     switch (State)
     {
     case EPlayerAwarenessState::Suspicious:
     {
-        FLinearColor ProgressColor = GetProgressColor(Progress);
-        DrawDiamondBorder(ScreenPos, IndicatorSize, ProgressColor, 2.0f);
+        FLinearColor ProgressColor = ApplyOpacity(GetProgressColor(Progress));
+        DrawDiamondBorder(ScreenPos, FinalSize, ProgressColor, 2.0f);
         if (Progress > 0.f)
         {
-            DrawFilledDiamondPortion(ScreenPos, IndicatorSize, Progress, ProgressColor);
+            DrawFilledDiamondPortion(ScreenPos, FinalSize, Progress, ProgressColor);
         }
         break;
     }
     case EPlayerAwarenessState::Investigating:
     {
-        FLinearColor Yellow(1.0f, 0.92f, 0.16f);
-        DrawFilledDiamondPortion(ScreenPos, IndicatorSize, 1.0f, Yellow);
-        DrawDiamondBorder(ScreenPos, IndicatorSize, Yellow, 2.0f);
-        DrawCenteredText(TEXT("?"), ScreenPos, FLinearColor::Black, 1.0f);
+        FLinearColor Yellow = ApplyOpacity(FLinearColor(1.0f, 0.92f, 0.16f));
+        FLinearColor Black = ApplyOpacity(FLinearColor::Black);
+        DrawFilledDiamondPortion(ScreenPos, FinalSize, 1.0f, Yellow);
+        DrawDiamondBorder(ScreenPos, FinalSize, Yellow, 2.0f);
+        DrawCenteredText(TEXT("?"), ScreenPos, Black, 1.0f);
         break;
     }
     case EPlayerAwarenessState::Alerted:
     case EPlayerAwarenessState::AlarmTriggered:
     {
-        FLinearColor Red(1.0f, 0.0f, 0.0f);
-        DrawFilledDiamondPortion(ScreenPos, IndicatorSize, 1.0f, Red);
-        DrawDiamondBorder(ScreenPos, IndicatorSize, Red, 2.0f);
-        DrawCenteredText(TEXT("!"), ScreenPos, FLinearColor::White, 1.0f);
+        FLinearColor Red = ApplyOpacity(FLinearColor(1.0f, 0.0f, 0.0f));
+        FLinearColor White = ApplyOpacity(FLinearColor::White);
+        DrawFilledDiamondPortion(ScreenPos, FinalSize, 1.0f, Red);
+        DrawDiamondBorder(ScreenPos, FinalSize, Red, 2.0f);
+        DrawCenteredText(TEXT("!"), ScreenPos, White, 1.0f);
         break;
     }
     case EPlayerAwarenessState::LostTarget:
     {
-        FLinearColor ProgressColor = GetProgressColor(Progress);
-        DrawDiamondBorder(ScreenPos, IndicatorSize, ProgressColor, 2.0f);
+        FLinearColor ProgressColor = ApplyOpacity(GetProgressColor(Progress));
+        DrawDiamondBorder(ScreenPos, FinalSize, ProgressColor, 2.0f);
         if (Progress > 0.f)
         {
-            DrawFilledDiamondPortion(ScreenPos, IndicatorSize, Progress, ProgressColor);
+            DrawFilledDiamondPortion(ScreenPos, FinalSize, Progress, ProgressColor);
         }
         break;
     }
     default:
         break;
     }
+
+    // Arrow pointer when off-screen
+    if (bOffScreen)
+    {
+        FVector2D ArrowDir = (ScreenPos - ScreenCenter);
+        ArrowDir.Normalize();
+        FLinearColor ArrowColor = ApplyOpacity(GetProgressColor(Progress));
+        DrawArrowPointer(ScreenPos, ArrowDir, FinalSize, ArrowColor);
+    }
 }
 
-bool ACharacterHUD::ProjectWorldToHUD(const FVector& WorldPos, FVector2D& OutScreenPos, bool& bIsBehindCamera) const
+bool ACharacterHUD::ProjectWorldToHUD(const FVector& WorldPos, FVector2D& OutScreenPos, bool& bIsBehindCamera, FVector& OutCamLoc) const
 {
     APlayerController* PC = GetOwningPlayerController();
     if (!PC) return false;
 
-    FVector CamLoc;
     FRotator CamRot;
-    PC->GetPlayerViewPoint(CamLoc, CamRot);
+    PC->GetPlayerViewPoint(OutCamLoc, CamRot);
 
-    FVector Dir = WorldPos - CamLoc;
+    FVector Dir = WorldPos - OutCamLoc;
     float Dot = FVector::DotProduct(Dir, CamRot.Vector());
     bIsBehindCamera = (Dot < 0.f);
 
@@ -334,6 +390,20 @@ void ACharacterHUD::DrawCenteredText(const FString& Text, const FVector2D& Cente
     TextItem.Scale = FVector2D(Scale, Scale);
     TextItem.bOutlined = false;
     Canvas->DrawItem(TextItem);
+}
+
+void ACharacterHUD::DrawArrowPointer(const FVector2D& Center, const FVector2D& Direction, float Size, const FLinearColor& Color)
+{
+    if (!Canvas) return;
+
+    FVector2D Tip = Center + Direction * (Size + 6.f);
+    FVector2D Perp(-Direction.Y, Direction.X);
+    FVector2D Base1 = Center + Direction * Size + Perp * 4.f;
+    FVector2D Base2 = Center + Direction * Size - Perp * 4.f;
+
+    DrawLine(Tip.X, Tip.Y, Base1.X, Base1.Y, Color, 2.0f);
+    DrawLine(Tip.X, Tip.Y, Base2.X, Base2.Y, Color, 2.0f);
+    DrawLine(Base1.X, Base1.Y, Base2.X, Base2.Y, Color, 2.0f);
 }
 
 FLinearColor ACharacterHUD::GetProgressColor(float Progress) const
