@@ -5,25 +5,14 @@
 #include "GameFramework/Pawn.h"
 #include "DrawDebugHelpers.h"
 #include "CameraAIController.h"
+#include "AlertWidget.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 
-
-/*
-** How this AI will work? **
-Patrol(rotate camera) between two points on the ground in front of it, rotating camera to look at them.
-If camera heard something, change light color to yellow, increase speed and look at that point for 3 seconds, then investigate sound for 3 times (Pick new location to look, rotate camera to that, wait for 3 seconds),   
-If camera saw player, Camera will follow player and a timer will start (5 seconds). If player is still in sight after timer ends trigger alarm
-
-*/
-
-// Sets default values
 ACameraPawn::ACameraPawn()
 {
-    // Enable Tick
     PrimaryActorTick.bCanEverTick = true;
 
-    // Initialize mesh component
     mesh = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("CameraMesh"));
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
     mesh->SetupAttachment(RootComponent);
@@ -32,21 +21,21 @@ ACameraPawn::ACameraPawn()
     ScannerLight->SetupAttachment(mesh, FName("CameraJoint"));
 
     ScannerLight->SetInnerConeAngle(25.f);
-    ScannerLight->SetOuterConeAngle(30.f); // match SightConfig->PeripheralVisionAngleDegrees
-    ScannerLight->SetAttenuationRadius(800.f); // match SightRadius
-    ScannerLight->SetLightColor(FLinearColor::Green); // default scanning color
+    ScannerLight->SetOuterConeAngle(30.f);
+    ScannerLight->SetAttenuationRadius(800.f);
+    ScannerLight->SetLightColor(FLinearColor::Green);
     ScannerLight->SetIntensity(5000.f);
-    ScannerLight->bUseInverseSquaredFalloff = false; // cleaner cone
+    ScannerLight->bUseInverseSquaredFalloff = false;
     ScannerLight->VolumetricScatteringIntensity = 10.0f;
 
     NotifyWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("Alert Widget"));
     NotifyWidget->SetupAttachment(RootComponent);
-    NotifyWidget->SetRelativeLocation(FVector(0.f,0.f,150.f));
+    NotifyWidget->SetRelativeLocation(FVector(0.f, 0.f, 150.f));
     NotifyWidget->SetWidgetSpace(EWidgetSpace::Screen);
     NotifyWidget->SetDrawSize(FVector2D(100.f, 50.f));
     NotifyWidget->SetVisibility(false);
 
-    ChangeLightColor(FColor(10,150,0,255));
+    ChangeLightColor(FColor(10, 150, 0, 255));
 }
 
 void ACameraPawn::BeginPlay()
@@ -56,10 +45,15 @@ void ACameraPawn::BeginPlay()
     CalculatePatrolPoints();
     bool isLeftFirst = FMath::RandBool();
     if (isLeftFirst)
-        PatrolPoints.Swap(0,1);
+        PatrolPoints.Swap(0, 1);
 
-    CurrentPoint = GetActorLocation() + GetActorRightVector() * 1000;
-    MoveCamera(PatrolPoints[0]);
+    // Initialize look target and bone rotation to first patrol point
+    CurrentPatrolIndex = 0;
+    DesiredLookTarget = PatrolPoints[0];
+
+    FVector CameraLocation = mesh->GetComponentLocation();
+    CurrentBoneRotation = UKismetMathLibrary::FindLookAtRotation(CameraLocation, DesiredLookTarget) + CameraLookOffset;
+    mesh->SetBoneRotationByName("CameraJoint", CurrentBoneRotation, EBoneSpaces::WorldSpace);
 
     if (ACameraAIController* CamController = Cast<ACameraAIController>(GetController()))
     {
@@ -77,79 +71,79 @@ void ACameraPawn::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if(TargetActor)
-        MoveCamera(TargetActor->GetActorLocation());
-    else
-        if (CurrentPoint != TargetPoint && bIsPatrolling)
+    // Priority 1: Follow a target actor
+    if (FollowTargetActor)
+    {
+        DesiredLookTarget = FollowTargetActor->GetActorLocation();
+    }
+    // Priority 2: If patrolling, update patrol logic
+    else if (bIsPatrolling)
+    {
+        UpdatePatrol(DeltaTime);
+    }
+    // Priority 3: DesiredLookTarget was set externally (by BT task via SetLookTarget)
+
+    UpdateBoneRotation(DeltaTime);
+}
+
+void ACameraPawn::UpdateBoneRotation(float DeltaTime)
+{
+    FVector CameraLocation = mesh->GetComponentLocation();
+    FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(CameraLocation, DesiredLookTarget) + CameraLookOffset;
+
+    CurrentBoneRotation = FMath::RInterpTo(CurrentBoneRotation, TargetRot, DeltaTime, RotateSpeed);
+    mesh->SetBoneRotationByName("CameraJoint", CurrentBoneRotation, EBoneSpaces::WorldSpace);
+}
+
+void ACameraPawn::UpdatePatrol(float DeltaTime)
+{
+    if (PatrolPoints.Num() < 2) return;
+
+    if (bWaitingAtPatrolPoint)
+    {
+        PatrolWaitTimer -= DeltaTime;
+        if (PatrolWaitTimer <= 0.f)
         {
-            CurrentPoint = FMath::VInterpTo(CurrentPoint, TargetPoint, DeltaTime, RotateSpeed);
-            MoveCamera(CurrentPoint);
+            bWaitingAtPatrolPoint = false;
+            // Move to next patrol point
+            CurrentPatrolIndex = (CurrentPatrolIndex + 1) % PatrolPoints.Num();
         }
-        else {
-            MoveCamera(TargetPoint);
-        }
+        return;
+    }
 
-}
+    FVector TargetPoint = PatrolPoints[CurrentPatrolIndex];
+    DesiredLookTarget = TargetPoint;
 
-FTransform ACameraPawn::GetScannerViewTransform() const {
-  if(ScannerLight)
-    return ScannerLight->GetComponentTransform();
-
-  const FVector Loc = mesh->GetBoneLocationByName(FName("CameraJoint"), EBoneSpaces::WorldSpace); 
-  const FRotator Rot = mesh->GetBoneRotationByName(FName("CameraJoint"), EBoneSpaces::WorldSpace);
-
-  return FTransform(Rot, Loc);
-}
-
-void ACameraPawn::MoveCameraDelta(FVector TargetLocation, float dt)
-{
+    // Check if we've roughly reached the look target (rotation is close enough)
     FVector CameraLocation = mesh->GetComponentLocation();
+    FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(CameraLocation, TargetPoint) + CameraLookOffset;
+    float AngleDiff = FMath::Abs(FRotator::NormalizeAxis(CurrentBoneRotation.Yaw - TargetRot.Yaw));
 
-    // Calculate the target rotation
-    FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(CameraLocation, TargetLocation) + CameraLookOffset;
-
-    FRotator ClampedDesired = LookAtRotation;
-    ClampedDesired.Pitch = FMath::ClampAngle(ClampedDesired.Pitch, -60.f, 10.f);
-    ClampedDesired.Roll  = 0.f;
-
-    // Interpolate towards the target rotation using delta time
-    FRotator InterpolatedRotation = FMath::RInterpTo(mesh->GetBoneRotationByName("CameraJoint", EBoneSpaces::WorldSpace), LookAtRotation, dt, RotateSpeed);
-
-    // Set the interpolated rotation to the camera joint
-    mesh->SetBoneRotationByName("CameraJoint", InterpolatedRotation, EBoneSpaces::WorldSpace);
+    if (AngleDiff < 2.0f)
+    {
+        bWaitingAtPatrolPoint = true;
+        PatrolWaitTimer = PatrolWaitTime;
+    }
 }
 
-void ACameraPawn::MoveCamera(FVector TargetLocation)
+FTransform ACameraPawn::GetScannerViewTransform() const
 {
-    FVector CameraLocation = mesh->GetComponentLocation();
-    
-    FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(CameraLocation, TargetLocation) + CameraLookOffset;
+    if (ScannerLight)
+        return ScannerLight->GetComponentTransform();
 
-   FRotator Clamped = LookAtRotation;
-   Clamped.Pitch = FMath::ClampAngle(LookAtRotation.Pitch, -60.f,10.f); 
-   Clamped.Roll = 0.f;
-
-    mesh->SetBoneRotationByName("CameraJoint", LookAtRotation, EBoneSpaces::WorldSpace);
-}
-
-void ACameraPawn::MoveCameraToActor(AActor* InTargetActor)
-{
-    if (InTargetActor)
-        MoveCamera(InTargetActor->GetActorLocation());
+    const FVector Loc = mesh->GetBoneLocationByName(FName("CameraJoint"), EBoneSpaces::WorldSpace);
+    const FRotator Rot = mesh->GetBoneRotationByName(FName("CameraJoint"), EBoneSpaces::WorldSpace);
+    return FTransform(Rot, Loc);
 }
 
 FVector ACameraPawn::GetHeadLocation()
 {
-    return GetScannerViewTransform().GetLocation(); 
-    //return mesh->GetBoneLocationByName(FName("CameraJoint"), EBoneSpaces::WorldSpace);
+    return GetScannerViewTransform().GetLocation();
 }
 
 FRotator ACameraPawn::GetHeadRotation()
 {
-  return GetScannerViewTransform().Rotator();
-    //FRotator Rotation = mesh->GetBoneRotationByName(FName("CameraJoint"), EBoneSpaces::WorldSpace);
-    //Rotation.Pitch = -40.0f;
-    //return Rotation;
+    return GetScannerViewTransform().Rotator();
 }
 
 void ACameraPawn::ChangeLightColor(FColor color)
@@ -157,19 +151,62 @@ void ACameraPawn::ChangeLightColor(FColor color)
     ScannerLight->SetLightColor(color);
 }
 
+#pragma region Smooth Movement API
+
+void ACameraPawn::SetLookTarget(FVector InTarget)
+{
+    DesiredLookTarget = InTarget;
+}
+
+void ACameraPawn::SetFollowTarget(AActor* InActor)
+{
+    FollowTargetActor = InActor;
+}
+
+void ACameraPawn::ClearFollowTarget()
+{
+    FollowTargetActor = nullptr;
+}
+
+void ACameraPawn::ResumePatrol()
+{
+    bIsPatrolling = true;
+    bWaitingAtPatrolPoint = false;
+}
+
+void ACameraPawn::PausePatrol()
+{
+    bIsPatrolling = false;
+}
+
+UAlertWidget* ACameraPawn::GetNotifyWidget() const
+{
+    if (NotifyWidget)
+    {
+        return Cast<UAlertWidget>(NotifyWidget->GetUserWidgetObject());
+    }
+    return nullptr;
+}
+
+void ACameraPawn::SetNotifyWidgetVisible(bool bVisible)
+{
+    if (NotifyWidget)
+    {
+        NotifyWidget->SetVisibility(bVisible);
+    }
+}
+
+#pragma endregion
+
 void ACameraPawn::SetScannerSight(float NewSightRadius, float NewPeripheralVisionAngleDegrees)
 {
-    // 1) Update spotlight (visual cone)
     if (ScannerLight)
     {
         ScannerLight->SetAttenuationRadius(NewSightRadius);
-
-        // Treat angle as the same value everywhere so it's visually consistent
         ScannerLight->SetOuterConeAngle(NewPeripheralVisionAngleDegrees);
         ScannerLight->SetInnerConeAngle(FMath::Max(NewPeripheralVisionAngleDegrees - 5.f, 0.f));
     }
 
-    // 2) Update AI sight on the controller
     if (ACameraAIController* CamController = Cast<ACameraAIController>(GetController()))
     {
         if (auto config = CamController->GetSightConfig())
@@ -187,49 +224,47 @@ void ACameraPawn::SetScannerSight(float NewSightRadius, float NewPeripheralVisio
     }
 }
 
-
 void ACameraPawn::CalculatePatrolPoints()
 {
     FVector CameraLocation = GetActorLocation();
     FRotator CameraRotation = GetActorRotation();
 
-    // Calculate the downward rotation by 30 degrees
     FRotator DownwardRotation = CameraRotation + FRotator(RotateAngle, 90.0f, 0.0f);
     FVector ForwardVector = DownwardRotation.Vector();
     FVector LeftVector = FVector::CrossProduct(ForwardVector, FVector::UpVector).GetSafeNormal();
 
-    // Calculate the first patrol point on the ground in front of the camera
     FVector PatrolPoint1 = CameraLocation + ForwardVector * DistanceFromPawn - LeftVector * PointsOffset;
-    PatrolPoint1.Z = 0.0f; // Project to ground level
+    PatrolPoint1.Z = 0.0f;
 
-    // Calculate the second patrol point in front of the camera, offset by DistanceBetweenPoints
     FVector PatrolPoint2 = PatrolPoint1 + (LeftVector * DistanceBetweenPoints);
-    PatrolPoint2.Z = 0.0f; // Project to ground level
+    PatrolPoint2.Z = 0.0f;
 
     if (PatrolPoints.Num() > 2)
     {
         PatrolPoints[0] = PatrolPoint1;
         PatrolPoints[1] = PatrolPoint2;
     }
-    else {
+    else
+    {
         PatrolPoints.Add(PatrolPoint1);
         PatrolPoints.Add(PatrolPoint2);
     }
 
-    UE_LOG(LogTemp, Error, TEXT("Patrol points calculated: %d, Points: (%s, %s)"), PatrolPoints.Num(), *PatrolPoint1.ToString(), *PatrolPoint2.ToString());
+    UE_LOG(LogTemp, Log, TEXT("Patrol points calculated: %d, Points: (%s, %s)"), PatrolPoints.Num(), *PatrolPoint1.ToString(), *PatrolPoint2.ToString());
 }
 
 float ACameraPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
     float Dealt = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-    
+
     if (Dealt > Health)
     {
         if (ExplosionEffect)
-            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(),ExplosionEffect,GetTransform(),true);
-        if (ExplosionSound) {
-            UGameplayStatics::PlaySoundAtLocation(GetWorld(),ExplosionSound,GetActorLocation(),4.0f);
-            MakeNoise(3,this,GetActorLocation());
+            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetTransform(), true);
+        if (ExplosionSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, GetActorLocation(), 4.0f);
+            MakeNoise(3, this, GetActorLocation());
         }
         Destroy();
     }

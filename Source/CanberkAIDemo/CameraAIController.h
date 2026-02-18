@@ -4,9 +4,6 @@
 #include "BaseAIController.h"
 #include "CameraAIController.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class CANBERKAIDEMO_API ACameraAIController : public ABaseAIController
 {
@@ -22,8 +19,42 @@ public:
     void OnDetectPlayer() override;
     void OnHeardPlayer(FVector Location) override;
 
+    /** Trigger alert state — red light, then restart mission after delay */
+    void TriggerAlert();
+
+    /** Get the accumulated sight time (for progress bar in BT tasks) */
+    FORCEINLINE float GetSightProgress() const { return SightAccumulatedTime / SightAlertThreshold; }
+
 protected:
     virtual void GetActorEyesViewPoint(FVector&, FRotator&) const override;
 
     class ACameraPawn* camera;
+
+private:
+    void UpdateSightEscalation(float DeltaTime);
+    void OnAlertDelayFinished();
+
+    /** Time the player has been continuously visible */
+    float SightAccumulatedTime = 0.f;
+
+    /** Seconds of continuous sight before triggering alert */
+    UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
+    float SightAlertThreshold = 5.0f;
+
+    /** Decay rate when player is not visible (per second) */
+    UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
+    float SightDecayRate = 1.5f;
+
+    /** Faster rotation speed during post-sight investigation */
+    UPROPERTY(EditDefaultsOnly, Category = "Camera AI")
+    float InvestigateFasterSpeed = 2.5f;
+
+    /** Normal patrol rotation speed (saved on BeginPlay) */
+    float NormalRotateSpeed = 0.8f;
+
+    /** Timer for the delay between alert and level restart */
+    FTimerHandle AlertRestartTimerHandle;
+
+    /** Whether alert has already been triggered (prevent double-trigger) */
+    bool bAlertTriggered = false;
 };
