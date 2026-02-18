@@ -1,0 +1,23 @@
+// © 2025 Canberk. All Rights Reserved.
+
+#include "RoboAICharacter.h"
+
+ARoboAICharacter::ARoboAICharacter()
+{
+	PrimaryActorTick.bCanEverTick = true;
+	bIsAI = true;
+
+}
+
+void ARoboAICharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+}
+
+void ARoboAICharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
