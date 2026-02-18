@@ -4,6 +4,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "CameraPawn.h"
+#include "CameraAIController.h"
 
 UBTTask_CameraFollowPlayer::UBTTask_CameraFollowPlayer()
 {
@@ -23,9 +24,13 @@ EBTNodeResult::Type UBTTask_CameraFollowPlayer::ExecuteTask(UBehaviorTreeCompone
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	if (!BB) return EBTNodeResult::Failed;
 
-	// Get the player actor from the blackboard
 	AActor* PlayerActor = Cast<AActor>(BB->GetValueAsObject(FName("Character")));
 	if (!PlayerActor) return EBTNodeResult::Failed;
+
+	CurrentPhase = ECameraFollowPhase::Following;
+	PhaseTimer = 0.f;
+	CurrentInvestigateIndex = 0;
+	InvestigatePoints.Empty();
 
 	Camera->PausePatrol();
 	Camera->SetFollowTarget(PlayerActor);
@@ -35,28 +40,149 @@ EBTNodeResult::Type UBTTask_CameraFollowPlayer::ExecuteTask(UBehaviorTreeCompone
 
 void UBTTask_CameraFollowPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!BB)
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	if (!AIController)
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
 
-	bool bCanSee = BB->GetValueAsBool(FName("bDidSee"));
+	ACameraAIController* CamAI = Cast<ACameraAIController>(AIController);
+	ACameraPawn* Camera = Cast<ACameraPawn>(AIController->GetPawn());
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 
-	// Keep ticking while we can see the player; finish when sight is lost
-	if (!bCanSee)
+	if (!Camera || !BB)
 	{
-		AAIController* AIController = OwnerComp.GetAIOwner();
-		if (AIController)
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
+	// Check for alert at any phase
+	if (CamAI && CamAI->GetAwarnessState() == EPlayerAwarenessState::Alerted)
+	{
+		Camera->ClearFollowTarget();
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
+	switch (CurrentPhase)
+	{
+	case ECameraFollowPhase::Following:
+	{
+		bool bCanSee = BB->GetValueAsBool(FName("bDidSee"));
+		if (!bCanSee)
 		{
-			if (ACameraPawn* Camera = Cast<ACameraPawn>(AIController->GetPawn()))
+			Camera->ClearFollowTarget();
+			LastSeenLocation = BB->GetValueAsVector(FName("LastSeenLocation"));
+			Camera->SetLookTarget(LastSeenLocation);
+			PhaseTimer = 0.f;
+			CurrentPhase = ECameraFollowPhase::LookingAtLastSeen;
+
+			if (CamAI)
 			{
-				Camera->ClearFollowTarget();
+				CamAI->SetAwarnessState(EPlayerAwarenessState::Investigating);
+			}
+		}
+		break;
+	}
+
+	case ECameraFollowPhase::LookingAtLastSeen:
+	{
+		// If player is seen again during investigation → immediate alert
+		bool bCanSee = BB->GetValueAsBool(FName("bDidSee"));
+		if (bCanSee)
+		{
+			if (CamAI) CamAI->TriggerAlert();
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			return;
+		}
+
+		PhaseTimer += DeltaSeconds;
+		if (PhaseTimer >= LookAtLastSeenDuration)
+		{
+			EnterInvestigatePhase(OwnerComp);
+		}
+		break;
+	}
+
+	case ECameraFollowPhase::Investigating:
+	{
+		// If player is seen again during investigation → immediate alert
+		bool bCanSee = BB->GetValueAsBool(FName("bDidSee"));
+		if (bCanSee)
+		{
+			if (CamAI) CamAI->TriggerAlert();
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			return;
+		}
+
+		PhaseTimer += DeltaSeconds;
+		if (PhaseTimer >= InvestigatePointDuration)
+		{
+			CurrentInvestigateIndex++;
+			if (CurrentInvestigateIndex >= InvestigatePoints.Num())
+			{
+				// Investigation complete, return to patrol
+				if (CamAI)
+				{
+					CamAI->SetAwarnessState(EPlayerAwarenessState::Unaware);
+				}
+				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+				return;
+			}
+
+			Camera->SetLookTarget(InvestigatePoints[CurrentInvestigateIndex]);
+			PhaseTimer = 0.f;
+		}
+		break;
+	}
+	}
+}
+
+void UBTTask_CameraFollowPlayer::EnterInvestigatePhase(UBehaviorTreeComponent& OwnerComp)
+{
+	CurrentPhase = ECameraFollowPhase::Investigating;
+	PhaseTimer = 0.f;
+	CurrentInvestigateIndex = 0;
+	InvestigatePoints.Empty();
+
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	ACameraPawn* Camera = Cast<ACameraPawn>(AIController->GetPawn());
+
+	FVector CameraLocation = Camera->GetActorLocation();
+	FVector ForwardDir = (LastSeenLocation - CameraLocation).GetSafeNormal2D();
+
+	for (int32 i = 0; i < InvestigatePointCount; i++)
+	{
+		FVector RandomPoint = FVector::ZeroVector;
+		// Try up to 10 times to find a point in the forward hemisphere
+		for (int32 Attempt = 0; Attempt < 10; Attempt++)
+		{
+			FVector RandomOffset = FMath::VRand() * FMath::RandRange(100.f, InvestigateRadius);
+			RandomOffset.Z = 0.f;
+			FVector Candidate = LastSeenLocation + RandomOffset;
+			FVector DirToCandidate = (Candidate - CameraLocation).GetSafeNormal2D();
+
+			if (FVector::DotProduct(ForwardDir, DirToCandidate) > 0.f)
+			{
+				RandomPoint = Candidate;
+				break;
 			}
 		}
 
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		// Fallback if all attempts were behind
+		if (RandomPoint.IsZero())
+		{
+			FVector RandomOffset = ForwardDir.RotateAngleAxis(FMath::RandRange(-70.f, 70.f), FVector::UpVector) * FMath::RandRange(100.f, InvestigateRadius);
+			RandomPoint = LastSeenLocation + RandomOffset;
+		}
+
+		InvestigatePoints.Add(RandomPoint);
+	}
+
+	if (InvestigatePoints.Num() > 0)
+	{
+		Camera->SetLookTarget(InvestigatePoints[0]);
 	}
 }
 
@@ -76,5 +202,6 @@ EBTNodeResult::Type UBTTask_CameraFollowPlayer::AbortTask(UBehaviorTreeComponent
 
 FString UBTTask_CameraFollowPlayer::GetStaticDescription() const
 {
-	return TEXT("Follow player until sight is lost");
+	return FString::Printf(TEXT("Follow player, then investigate: look at last seen for %.1fs, then %d points x %.1fs"),
+		LookAtLastSeenDuration, InvestigatePointCount, InvestigatePointDuration);
 }

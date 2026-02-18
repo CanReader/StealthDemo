@@ -6,9 +6,20 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_CameraFollowPlayer.generated.h"
 
+UENUM()
+enum class ECameraFollowPhase : uint8
+{
+	Following,
+	LookingAtLastSeen,
+	Investigating
+};
+
 /**
- * Latent BT task: sets camera to follow the player.
- * Ticks while bDidSee is true. Returns Success when sight is lost.
+ * Latent BT task: follows the player, then investigates when sight is lost.
+ * Phase 1: Follow player while visible
+ * Phase 2: Look at last seen location for LookAtLastSeenDuration seconds
+ * Phase 3: Look at 3 random points around last seen location
+ * Returns Success after investigation is complete, or Failed if alert triggers.
  */
 UCLASS()
 class CANBERKAIDEMO_API UBTTask_CameraFollowPlayer : public UBTTaskNode
@@ -22,4 +33,26 @@ public:
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual FString GetStaticDescription() const override;
+
+private:
+	void EnterInvestigatePhase(UBehaviorTreeComponent& OwnerComp);
+
+	ECameraFollowPhase CurrentPhase = ECameraFollowPhase::Following;
+
+	UPROPERTY(EditAnywhere, Category = "Camera AI")
+	float LookAtLastSeenDuration = 3.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera AI")
+	float InvestigatePointDuration = 3.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera AI")
+	float InvestigateRadius = 500.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera AI")
+	int32 InvestigatePointCount = 3;
+
+	float PhaseTimer = 0.f;
+	FVector LastSeenLocation;
+	TArray<FVector> InvestigatePoints;
+	int32 CurrentInvestigateIndex = 0;
 };

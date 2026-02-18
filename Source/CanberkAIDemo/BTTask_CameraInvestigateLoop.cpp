@@ -68,11 +68,30 @@ void UBTTask_CameraInvestigateLoop::TickTask(UBehaviorTreeComponent& OwnerComp, 
 	if (!bLookTargetSet)
 	{
 		FVector Origin = BB->GetValueAsVector(InvestigateOriginKey.SelectedKeyName);
+		FVector CameraLocation = Camera->GetActorLocation();
+		FVector ForwardDir = (Origin - CameraLocation).GetSafeNormal2D();
 
-		// Generate a random point around the origin
-		FVector RandomOffset = FMath::VRand() * FMath::FRandRange(InvestigateRadius * 0.3f, InvestigateRadius);
-		RandomOffset.Z = 0.f; // Keep it on the horizontal plane
-		FVector LookPoint = Origin + RandomOffset;
+		// Generate a random point in the forward hemisphere
+		FVector LookPoint = FVector::ZeroVector;
+		for (int32 Attempt = 0; Attempt < 10; Attempt++)
+		{
+			FVector RandomOffset = FMath::VRand() * FMath::FRandRange(InvestigateRadius * 0.3f, InvestigateRadius);
+			RandomOffset.Z = 0.f;
+			FVector Candidate = Origin + RandomOffset;
+			FVector DirToCandidate = (Candidate - CameraLocation).GetSafeNormal2D();
+
+			if (FVector::DotProduct(ForwardDir, DirToCandidate) > 0.f)
+			{
+				LookPoint = Candidate;
+				break;
+			}
+		}
+
+		if (LookPoint.IsZero())
+		{
+			FVector RandomOffset = ForwardDir.RotateAngleAxis(FMath::RandRange(-70.f, 70.f), FVector::UpVector) * FMath::FRandRange(InvestigateRadius * 0.3f, InvestigateRadius);
+			LookPoint = Origin + RandomOffset;
+		}
 
 		Camera->SetLookTarget(LookPoint);
 		bLookTargetSet = true;
