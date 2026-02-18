@@ -135,14 +135,12 @@ void ABaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     // SIGHT
     if (Stimulus.Type == UAISense::GetSenseID(UAISense_Sight::StaticClass()))
     {
-        if (!Stimulus.IsExpired())
+        if (Stimulus.WasSuccessfullySensed())
         {
-            // Newly seen / still seen
             OnNoticedPlayer(Cast<APawn>(Actor));
         }
         else
         {
-            // LOST SIGHT
             OnLostPlayer(true);
         }
     }
@@ -150,7 +148,7 @@ void ABaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     // HEARING
     else if (Stimulus.Type == UAISense::GetSenseID(UAISense_Hearing::StaticClass()))
     {
-        if (!Stimulus.IsExpired())
+        if (Stimulus.WasSuccessfullySensed())
         {
             OnHeardPlayer(Stimulus.StimulusLocation);
         }
