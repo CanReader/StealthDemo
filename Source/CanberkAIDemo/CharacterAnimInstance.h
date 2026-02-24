@@ -76,4 +76,10 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	EWeaponType EquippedType;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	bool bIsHoldingRock;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	bool bIsAimingRock;
 };

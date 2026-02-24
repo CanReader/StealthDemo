@@ -6,9 +6,12 @@
 #include <EnhancedInputComponent.h>
 #include <EnhancedInputSubsystems.h>
 #include "InputHandlerComponent.h"
-#include "DrawDebugHelpers.h" 
+#include "ThrownRock.h"
+#include "PickupRock.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "Components/ArrowComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogMainCharacter);
 
@@ -110,6 +113,11 @@ AAgentCharacter::AAgentCharacter()
 	Patch->SetupAttachment(Head);
 	MeshModules.Add("Patch", Patch);
 
+	// Held rock mesh — attached to right hand, hidden until pickup
+	HeldRockMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldRockMesh"));
+	HeldRockMesh->SetupAttachment(Head, FName("RightHandSocket"));
+	HeldRockMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HeldRockMesh->SetVisibility(false);
 }
 
 void AAgentCharacter::BeginPlay() {
@@ -135,17 +143,22 @@ void AAgentCharacter::Tick(float DeltaTime)
 );
 GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
 
-if(Camera) 
+if(Camera)
 {
 	const float TargetFOV = bIsZooming ? ZoomedFOV : DefaultFOV;
 	const float CurrentFOV = Camera->FieldOfView;
-	
+
 	const float NewFOV = FMath::FInterpTo(CurrentFOV,
 		TargetFOV,
 		DeltaTime,
 		ZoomInterpSpeed);
-		
+
 		Camera->SetFieldOfView(NewFOV);
+}
+
+if (bIsAimingRock)
+{
+	DrawThrowTrajectory();
 }
 }
 
@@ -249,19 +262,56 @@ void AAgentCharacter::SprintAction(const FInputActionValue& Value)
 void AAgentCharacter::EquipAction(const FInputActionValue& Value)
 {
 	if (OverlappingWeapon)
+	{
 		Combat->EquipWeapon(OverlappingWeapon);
+	}
+	else if (OverlappingPickupRock && !bIsHoldingRock)
+	{
+		bIsHoldingRock = true;
+		if (HeldRockMesh)
+		{
+			HeldRockMesh->SetVisibility(true);
+		}
+		GetHUD()->UpdateRockCount(1);
+		OverlappingPickupRock->Destroy();
+		OverlappingPickupRock = nullptr;
+	}
 }
 
 void AAgentCharacter::FireAction(const FInputActionValue& Value)
 {
+	if (bIsAimingRock && bIsHoldingRock)
+	{
+		ThrowRock();
+		return;
+	}
 }
 
 void AAgentCharacter::AimAction(const FInputActionValue& Value)
 {
-	const bool bPresed = Value.Get<bool>();
-	bIsAiming = bPresed;
-	bIsZooming = bPresed;
+	const bool bPressed = Value.Get<bool>();
 
+	// Rock aiming mode: no weapon equipped and holding a rock
+	bool bHasWeapon = Combat && Combat->GetEquippedWeapon();
+
+	if (!bHasWeapon && bIsHoldingRock && ThrownRockClass)
+	{
+		bIsAimingRock = bPressed;
+		bIsZooming = bPressed;
+
+		if (bPressed)
+		{
+			bUseControllerRotationYaw = true;
+		}
+		else
+		{
+			bUseControllerRotationYaw = false;
+		}
+		return;
+	}
+
+	bIsAiming = bPressed;
+	bIsZooming = bPressed;
 }
 
 void AAgentCharacter::Jump()
@@ -321,4 +371,92 @@ void AAgentCharacter::PlayHitMontage()
 void AAgentCharacter::UpdateHealth()
 {
 	GetHUD()->UpdateHealth(Health);
+}
+
+void AAgentCharacter::DrawThrowTrajectory()
+{
+	if (!Camera) return;
+
+	FVector LaunchPos = GetActorLocation() + Camera->GetForwardVector() * 80.f + FVector(0.f, 0.f, 60.f);
+	FVector LaunchVelocity = Camera->GetForwardVector() * ThrowSpeed;
+
+	FPredictProjectilePathParams PathParams;
+	PathParams.StartLocation = LaunchPos;
+	PathParams.LaunchVelocity = LaunchVelocity;
+	PathParams.bTraceWithCollision = true;
+	PathParams.ProjectileRadius = 5.f;
+	PathParams.MaxSimTime = 3.f;
+	PathParams.SimFrequency = 20.f;
+	PathParams.TraceChannel = ECollisionChannel::ECC_Visibility;
+	PathParams.ActorsToIgnore.Add(this);
+
+	FPredictProjectilePathResult PathResult;
+	UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
+
+	// Draw trajectory line segments
+	for (int32 i = 0; i < PathResult.PathData.Num() - 1; i++)
+	{
+		DrawDebugLine(GetWorld(),
+			PathResult.PathData[i].Location,
+			PathResult.PathData[i + 1].Location,
+			FColor::Red, false, -1.f, 0, 2.f);
+	}
+
+	// Draw landing point indicator
+	if (PathResult.HitResult.bBlockingHit)
+	{
+		DrawDebugSphere(GetWorld(), PathResult.HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, -1.f, 0, 2.f);
+	}
+}
+
+void AAgentCharacter::ThrowRock()
+{
+	if (!bIsHoldingRock || !ThrownRockClass || !Camera) return;
+
+	// Play throw montage
+	if (ThrowMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Play(ThrowMontage);
+		}
+	}
+
+	// Spawn and launch the rock projectile
+	FVector LaunchPos = GetActorLocation() + Camera->GetForwardVector() * 80.f + FVector(0.f, 0.f, 60.f);
+	FVector LaunchDir = Camera->GetForwardVector();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+
+	AThrownRock* Rock = GetWorld()->SpawnActor<AThrownRock>(ThrownRockClass, LaunchPos, FRotator::ZeroRotator, SpawnParams);
+	if (Rock)
+	{
+		Rock->Launch(LaunchDir, ThrowSpeed);
+
+		if (ThrowSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ThrowSound, GetActorLocation());
+		}
+	}
+
+	// Hide hand rock and reset state
+	bIsHoldingRock = false;
+	bIsAimingRock = false;
+	bIsZooming = false;
+	bUseControllerRotationYaw = false;
+
+	if (HeldRockMesh)
+	{
+		HeldRockMesh->SetVisibility(false);
+	}
+
+	GetHUD()->UpdateRockCount(0);
+}
+
+void AAgentCharacter::SetOverlappingPickupRock(APickupRock* PickupRock)
+{
+	OverlappingPickupRock = PickupRock;
 }

@@ -51,5 +51,11 @@ void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 			UE_LOG(LogTemp,Warning,TEXT("Yaw:%.2f Pitch:%.2f"),AO_Yaw,AO_Pitch);
 
 		EquippedType = Character->GetEquippedWeaponType();
+
+		if (AAgentCharacter* Agent = Cast<AAgentCharacter>(Character))
+		{
+			bIsHoldingRock = Agent->GetIsHoldingRock();
+			bIsAimingRock = Agent->GetIsAimingRock();
+		}
 	}
 }

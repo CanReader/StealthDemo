@@ -110,6 +110,14 @@ void ACharacterHUD::UpdateAmmo(int32 Current, int32 Carried)
     Overlay->AmmoText->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Current, Carried)));
 }
 
+void ACharacterHUD::UpdateRockCount(int32 Count)
+{
+    if (Overlay && Overlay->RockCountText)
+    {
+        Overlay->RockCountText->SetText(FText::FromString(FString::Printf(TEXT("%d"), Count)));
+    }
+}
+
 #pragma region Camera Awareness Indicators
 
 void ACharacterHUD::RegisterCamera(ACameraAIController* Camera)

@@ -19,4 +19,6 @@ public:
 		UProgressBar* HealthBar;
 	UPROPERTY(meta = (BindWidget))
 		UTextBlock* AmmoText;
+	UPROPERTY(meta = (BindWidget))
+		UTextBlock* RockCountText;
 };

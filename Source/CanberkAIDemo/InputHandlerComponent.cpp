@@ -58,9 +58,11 @@ void UInputHandlerComponent::BindInputActions(UInputComponent* PlayerInputCompon
 		EnchancedComponent->BindAction(SprintAction, ETriggerEvent::Triggered, Character, &AAgentCharacter::SprintAction);
 		EnchancedComponent->BindAction(CoverAction, ETriggerEvent::Triggered, Character, &AAgentCharacter::CoverAction);
 		EnchancedComponent->BindAction(EquipAction, ETriggerEvent::Triggered, Character, &AAgentCharacter::EquipAction);
+		EnchancedComponent->BindAction(FireAction, ETriggerEvent::Started, Character, &AAgentCharacter::FireAction);
 		EnchancedComponent->BindAction(FireAction, ETriggerEvent::Triggered, Character, &AAgentCharacter::FireAction);
 		EnchancedComponent->BindAction(AimAction, ETriggerEvent::Triggered, Character, &AAgentCharacter::AimAction);
-		
+		EnchancedComponent->BindAction(AimAction, ETriggerEvent::Completed, Character, &AAgentCharacter::AimAction);
+
 	}
 	else
 	{

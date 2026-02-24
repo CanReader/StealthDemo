@@ -16,6 +16,9 @@
 #include "CharacterHUD.h"
 #include <Components/SphereComponent.h>
 
+class AThrownRock;
+class APickupRock;
+
 #include "AgentCharacter.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogMainCharacter, Log, All);
@@ -51,6 +54,8 @@ public:
 	void FireAction(const FInputActionValue& Value);
 	
 	void AimAction(const FInputActionValue& Value);
+
+	void SetOverlappingPickupRock(APickupRock* PickupRock);
 
 	virtual void Jump() override;
 
@@ -104,6 +109,35 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AimOffset, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AWeapon> OverlappingWeapon;
 	FRotator StartingAim;
+
+#pragma region Rock Throwing
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	bool bIsHoldingRock = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	bool bIsAimingRock = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<APickupRock> OverlappingPickupRock;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AThrownRock> ThrownRockClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	float ThrowSpeed = 2000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> ThrowSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rock|Animation", meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ThrowMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rock", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> HeldRockMesh;
+
+	void DrawThrowTrajectory();
+	void ThrowRock();
+#pragma endregion
 	
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera|Zoom")
@@ -131,4 +165,7 @@ public:
 	}
 
 	FORCEINLINE TObjectPtr<UCameraComponent> GetCamera() { return Camera;}
+
+	FORCEINLINE bool GetIsHoldingRock() const { return bIsHoldingRock; }
+	FORCEINLINE bool GetIsAimingRock() const { return bIsAimingRock; }
 };

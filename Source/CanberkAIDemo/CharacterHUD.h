@@ -31,6 +31,7 @@ public:
 
 	void UpdateHealth(float value);
 	void UpdateAmmo(int32 Current, int32 Carried);
+	void UpdateRockCount(int32 Count);
 	UFUNCTION(BlueprintCallable)
 	void ShowHealthBar(float Speed);
 	UFUNCTION(BlueprintCallable)
