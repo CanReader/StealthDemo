@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 // Author: Canberk Pitirli
 // Project: CanberkAIDemo
 // Description: Defines the mission-based game mode, tracking objectives and player progress. The mission is completed when the player successfully reaches the designated exit area, ensuring a clear and achievable goal for each gameplay session.

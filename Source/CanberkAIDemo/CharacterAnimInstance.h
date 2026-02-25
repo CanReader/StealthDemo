@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 // Author: Canberk Pitirli
 // Project: CanberkAIDemo
 // Description: Defines the blueprint for character animations, handling transitions, and syncing with gameplay logic. It processes animation-specific data and provides methods to manage and update character states seamlessly.

@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 // Author: Canberk Pitirli
 // Project: CanberkAIDemo
 // Description: Manages the combat system, including weapon handling, attack logic, and player interactions. Provides methods for equipping and using primary and secondary weapons, ensuring a seamless and dynamic combat experience.

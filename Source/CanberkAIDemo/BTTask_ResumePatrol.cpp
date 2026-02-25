@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 
 #include "BTTask_ResumePatrol.h"
 #include "AIController.h"

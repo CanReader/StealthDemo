@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 
 #include "AgentCharacter.h"
 #include <GameFramework/CharacterMovementComponent.h>

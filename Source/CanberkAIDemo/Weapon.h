@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 // Author: Canberk Pitirli
 // Project: CanberkAIDemo
 // Description: Defines the base class for all weapon types, providing core functionality and properties. Utilizes HitScan technology for immediate hit detection, ensuring precise and instantaneous weapon impact.

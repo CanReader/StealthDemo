@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 // Author: Canberk Pitirli
 // Project: CanberkAIDemo
 // Description: This class defines the main character, AgentCharacter, with unique abilities and gameplay mechanics.

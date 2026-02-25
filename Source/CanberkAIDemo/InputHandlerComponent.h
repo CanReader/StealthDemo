@@ -1,4 +1,4 @@
-// © 2025 Canberk. All Rights Reserved.
+// © 2025-2026 Canberk. All Rights Reserved.
 // Author: Canberk Pitirli
 // Project: CanberkAIDemo
 // Description: A dedicated component for centralizing and managing input handling; offers a modular and efficient solution, improving code organization and simplifying gameplay logic. Implemented as Facade pattern to AgentCharacter class
